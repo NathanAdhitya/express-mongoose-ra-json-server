@@ -2,7 +2,7 @@
 creates express.js routes from a mongoose model for ra-data-json-server
 
 ## Installation
-`npm add express-mongoose-ra-json-server --save` or if you use yarn, `yarn add express-mongoose-ra-json-server`
+`npm add express-mongoose-ra-json-server` or if you use yarn, `yarn add express-mongoose-ra-json-server`
 
 ## Usage
 Refer to the typescript definitions in [index.ts](src/index.ts) for a more complete information.
