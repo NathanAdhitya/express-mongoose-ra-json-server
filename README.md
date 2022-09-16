@@ -1,5 +1,5 @@
 # express-mongoose-ra-json-server
-![npm](https://img.shields.io/npm/v/express-mongoose-ra-json-server)
+[![npm](https://img.shields.io/npm/v/express-mongoose-ra-json-server)](https://www.npmjs.com/package/express-mongoose-ra-json-server)
 
 creates express.js routes from a mongoose model for ra-data-json-server  
 Example/demo project is available here: [express-mongoose-ra-json-server-demo](https://github.com/NathanAdhitya/express-mongoose-ra-json-server-demo)
