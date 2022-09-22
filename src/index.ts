@@ -1,12 +1,22 @@
 import { RequestHandler, Router } from "express";
+import { LeanDocument } from "mongoose";
 import statusMessages from "./statusMessages";
-import { ADPBaseModel } from "./utils/baseModel.interface";
+import { ADPBaseModel, ADPBaseSchema } from "./utils/baseModel.interface";
 import castFilter from "./utils/castFilter";
 import convertId from "./utils/convertId";
 import filterGetList from "./utils/filterGetList";
 import { filterReadOnly } from "./utils/filterReadOnly";
 import parseQuery from "./utils/parseQuery";
 import virtualId from "./utils/virtualId";
+
+// Export certain helper functions for custom reuse.
+export { default as virtualId } from "./utils/virtualId";
+export { default as convertId } from "./utils/convertId";
+export { default as castFilter } from "./utils/castFilter";
+export { default as parseQuery } from "./utils/parseQuery";
+export { default as filterGetList } from "./utils/filterGetList";
+export { filterReadOnly } from "./utils/filterReadOnly";
+export { default as statusMessages } from "./statusMessages";
 
 export interface raExpressMongooseCapabilities {
   list?: boolean;
@@ -74,14 +84,16 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
     get: canGet = true,
     create: canCreate = true,
     update: canUpdate = true,
-    delete: canDelete = true,
+    delete: canDelete = true
   } = capabilities ?? {};
 
   /** getList, getMany, getManyReference */
   if (canList)
     router.get(
       "/",
-      aclName && ACLMiddleware ? ACLMiddleware(`${aclName}.list`) : (req, res, next) => next(),
+      aclName && ACLMiddleware
+        ? ACLMiddleware(`${aclName}.list`)
+        : (req, res, next) => next(),
       async (req, res) => {
         let query = model.find({
           ...listQuery,
@@ -94,7 +106,7 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
             model,
             allowedRegexFields,
             q
-          ),
+          )
         });
 
         if (req.query._sort && req.query._order)
@@ -103,7 +115,7 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
               ? req.query._sort === "id"
                 ? "_id"
                 : req.query._sort
-              : "_id"]: req.query._order === "ASC" ? 1 : -1,
+              : "_id"]: req.query._order === "ASC" ? 1 : -1
           });
 
         if (req.query._start)
@@ -147,11 +159,13 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
                 model,
                 allowedRegexFields,
                 q
-              ),
+              )
             })
           ).toString()
         );
-        return res.json(virtualId(await query.lean()));
+        return res.json(
+          virtualId((await query.lean()) as LeanDocument<ADPBaseSchema>)
+        );
       }
     );
 
@@ -159,7 +173,9 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
   if (canGet)
     router.get(
       "/:id",
-      aclName && ACLMiddleware ? ACLMiddleware(`${aclName}.list`) : (req, res, next) => next(),
+      aclName && ACLMiddleware
+        ? ACLMiddleware(`${aclName}.list`)
+        : (req, res, next) => next(),
       async (req, res) => {
         await model
           .findById(req.params.id)
@@ -176,14 +192,16 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
   if (canCreate)
     router.post(
       "/",
-      aclName && ACLMiddleware ? ACLMiddleware(`${aclName}.create`) : (req, res, next) => next(),
+      aclName && ACLMiddleware
+        ? ACLMiddleware(`${aclName}.create`)
+        : (req, res, next) => next(),
       async (req, res) => {
         // eslint-disable-next-line new-cap
         const result = convertId(
           await inputTransformer(filterReadOnly<I>(req.body, readOnlyFields))
         );
         const newData = {
-          ...result,
+          ...result
         };
 
         const newEntry = new model(newData);
@@ -200,18 +218,20 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
   if (canUpdate)
     router.put(
       "/:id",
-      aclName && ACLMiddleware ? ACLMiddleware(`${aclName}.edit`) : (req, res, next) => next(),
+      aclName && ACLMiddleware
+        ? ACLMiddleware(`${aclName}.edit`)
+        : (req, res, next) => next(),
       async (req, res) => {
         const updateData = {
           ...(await convertId(
             await inputTransformer(filterReadOnly<I>(req.body, readOnlyFields))
-          )),
+          ))
         };
 
         await model
           .findOneAndUpdate({ _id: req.params.id }, updateData, {
             new: true,
-            runValidators: true,
+            runValidators: true
           })
           .lean()
           .then((result) => res.json(virtualId(result)))
@@ -227,18 +247,15 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
   if (canDelete)
     router.delete(
       "/:id",
-      aclName && ACLMiddleware ? ACLMiddleware(`${aclName}.delete`) : (req, res, next) => next(),
+      aclName && ACLMiddleware
+        ? ACLMiddleware(`${aclName}.delete`)
+        : (req, res, next) => next(),
       async (req, res) => {
         await model
           .findOneAndDelete({ _id: req.params.id })
           .then((result) => res.json(virtualId(result)))
           .catch((e) => {
-            return statusMessages.error(
-              res,
-              404,
-              e,
-              "Element does not exist"
-            );
+            return statusMessages.error(res, 404, e, "Element does not exist");
           });
       }
     );
