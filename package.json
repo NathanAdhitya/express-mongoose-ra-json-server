@@ -1,6 +1,6 @@
 {
   "name": "express-mongoose-ra-json-server",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "creates express.js routes from a mongoose model for ra-data-json-server",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
