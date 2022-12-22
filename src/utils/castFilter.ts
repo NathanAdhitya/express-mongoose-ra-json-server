@@ -1,5 +1,5 @@
-import { ADPBaseModel } from "./baseModel.interface";
 import escapeStringRegexp from "escape-string-regexp";
+import { ADPBaseModel } from "./baseModel.interface";
 
 /**
  * Turns all the params into their proper types, string into regexes.
@@ -11,12 +11,7 @@ export default function castFilter<T extends ADPBaseModel>(
   model: T,
   allowedRegexes: string[] = []
 ) {
-  const { path } = model.schema;
   Object.keys(obj).forEach((key) => {
-    try {
-      obj[key] = path(key).cast(obj[key], null, null);
-    } catch (e) {}
-
     /**  Parse MongoDB Query Operators **/
     let splittedKey = key.split("_");
     if (
@@ -28,8 +23,18 @@ export default function castFilter<T extends ADPBaseModel>(
       let operator = splittedKey.pop();
       let field = splittedKey.join("_");
 
+      try {
+        /** Check if the filter value is valid. **/
+        model.castObject({ [field]: obj[key] })
+      } catch (error) {
+        /** If not valid, ignore the filter **/
+        delete obj[key];
+        return;
+      }
+
       obj[field] =
         obj[field] && typeof obj[field] == "object" ? obj[field] : {};
+      /** Parse operator to mongoDB query operator. **/
       switch (operator) {
         case "eq":
           obj[field].$eq = obj[key];
@@ -59,6 +64,15 @@ export default function castFilter<T extends ADPBaseModel>(
       delete obj[key];
     } else if (allowedRegexes.includes(key) && typeof obj[key] === "string") {
       obj[key] = new RegExp(escapeStringRegexp(obj[key]));
+    } else {
+      try {
+        /** Check if the filter value is valid. **/
+        model.castObject({ [key]: obj[key] })
+      } catch (error) {
+        /** If not valid, ignore the filter. **/
+        delete obj[key];
+        return;
+      }
     }
   });
 
