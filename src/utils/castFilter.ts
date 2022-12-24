@@ -1,5 +1,7 @@
 import escapeStringRegexp from "escape-string-regexp";
+import mongoose from "mongoose";
 import { ADPBaseModel } from "./baseModel.interface";
+const { ObjectId } = mongoose.Types;
 
 /**
  * Turns all the params into their proper types, string into regexes.
@@ -12,6 +14,20 @@ export default function castFilter<T extends ADPBaseModel>(
   allowedRegexes: string[] = []
 ) {
   Object.keys(obj).forEach((key) => {
+
+    /** Parse MongoDB ObjectIds **/
+    if (typeof obj[key] === "string" && ObjectId.isValid(obj[key])) {
+      obj[key] = new ObjectId(obj[key]);
+    } else if (Array.isArray(obj[key])) {
+      /** Parse MongoDB ObjectIds in arrays (getMany)**/
+      obj[key] = obj[key].map((item) => {
+        if (typeof item === "string" && ObjectId.isValid(item)) {
+          return new ObjectId(item);
+        }
+        return item;
+      });
+    }
+
     /**  Parse MongoDB Query Operators **/
     let splittedKey = key.split("_");
     if (
@@ -64,6 +80,19 @@ export default function castFilter<T extends ADPBaseModel>(
       delete obj[key];
     } else if (allowedRegexes.includes(key) && typeof obj[key] === "string") {
       obj[key] = new RegExp(escapeStringRegexp(obj[key]));
+    } else if (Array.isArray(obj[key])) {
+      /** Use $in operator for arrays (getMany)**/
+      obj[key] = { $in: obj[key] }
+      obj[key].$in.forEach((item, index) => {
+        try {
+          /** Check if the filter value is valid. **/
+          model.castObject({ [key]: item })
+        } catch (error) {
+          /** If not valid, ignore the filter. **/
+          delete obj[key].$in[index];
+        }
+      })
+
     } else {
       try {
         /** Check if the filter value is valid. **/
@@ -71,7 +100,6 @@ export default function castFilter<T extends ADPBaseModel>(
       } catch (error) {
         /** If not valid, ignore the filter. **/
         delete obj[key];
-        return;
       }
     }
   });
