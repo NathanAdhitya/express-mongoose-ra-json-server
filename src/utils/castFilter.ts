@@ -48,7 +48,9 @@ export default function castFilter<T extends ADPBaseModel>(
           obj[field].$gte = obj[key];
           break;
         case "in":
-          obj[field].$in = parsePossibleObjectId(obj[key]);
+          obj[field].$in = Array.isArray(obj[key])
+            ? obj[key].map((item) => parsePossibleObjectId(item))
+            : [parsePossibleObjectId(obj[key])];
           break;
         case "lt":
           obj[field].$lt = obj[key];
@@ -60,7 +62,9 @@ export default function castFilter<T extends ADPBaseModel>(
           obj[field].$ne = obj[key];
           break;
         case "nin":
-          obj[field].$nin = parsePossibleObjectId(obj[key]);
+          obj[field].$in = Array.isArray(obj[key])
+            ? obj[key].map((item) => parsePossibleObjectId(item))
+            : [parsePossibleObjectId(obj[key])];
           break;
       }
       delete obj[key];
