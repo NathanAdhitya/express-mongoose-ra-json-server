@@ -14,20 +14,6 @@ export default function castFilter<T extends ADPBaseModel>(
   allowedRegexes: string[] = []
 ) {
   Object.keys(obj).forEach((key) => {
-
-    /** Parse MongoDB ObjectIds **/
-    if (typeof obj[key] === "string" && ObjectId.isValid(obj[key])) {
-      obj[key] = new ObjectId(obj[key]);
-    } else if (Array.isArray(obj[key])) {
-      /** Parse MongoDB ObjectIds in arrays (getMany)**/
-      obj[key] = obj[key].map((item) => {
-        if (typeof item === "string" && ObjectId.isValid(item)) {
-          return new ObjectId(item);
-        }
-        return item;
-      });
-    }
-
     /**  Parse MongoDB Query Operators **/
     let splittedKey = key.split("_");
     if (
@@ -41,7 +27,7 @@ export default function castFilter<T extends ADPBaseModel>(
 
       try {
         /** Check if the filter value is valid. **/
-        model.castObject({ [field]: obj[key] })
+        model.castObject({ [field]: obj[key] });
       } catch (error) {
         /** If not valid, ignore the filter **/
         delete obj[key];
@@ -62,7 +48,7 @@ export default function castFilter<T extends ADPBaseModel>(
           obj[field].$gte = obj[key];
           break;
         case "in":
-          obj[field].$in = obj[key];
+          obj[field].$in = parsePossibleObjectId(obj[key]);
           break;
         case "lt":
           obj[field].$lt = obj[key];
@@ -74,7 +60,7 @@ export default function castFilter<T extends ADPBaseModel>(
           obj[field].$ne = obj[key];
           break;
         case "nin":
-          obj[field].$nin = obj[key];
+          obj[field].$nin = parsePossibleObjectId(obj[key]);
           break;
       }
       delete obj[key];
@@ -82,27 +68,38 @@ export default function castFilter<T extends ADPBaseModel>(
       obj[key] = new RegExp(escapeStringRegexp(obj[key]));
     } else if (Array.isArray(obj[key])) {
       /** Use $in operator for arrays (getMany)**/
-      obj[key] = { $in: obj[key] }
+      obj[key] = { $in: obj[key] };
       obj[key].$in.forEach((item, index) => {
         try {
           /** Check if the filter value is valid. **/
-          model.castObject({ [key]: item })
+          model.castObject({ [key]: item });
         } catch (error) {
           /** If not valid, ignore the filter. **/
           delete obj[key].$in[index];
         }
-      })
-
+      });
     } else {
       try {
         /** Check if the filter value is valid. **/
-        model.castObject({ [key]: obj[key] })
+        model.castObject({ [key]: obj[key] });
       } catch (error) {
         /** If not valid, ignore the filter. **/
         delete obj[key];
       }
     }
   });
-
   return obj;
+}
+
+function parsePossibleObjectId(value) {
+  if (ObjectId.isValid(value)) {
+    let parsedId = new ObjectId(value);
+    if (parsedId.toString() === value) {
+      return parsedId;
+    } else {
+      return value;
+    }
+  } else {
+    return value;
+  }
 }
