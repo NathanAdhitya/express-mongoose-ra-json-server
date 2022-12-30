@@ -27,7 +27,11 @@ export default function castFilter<T extends ADPBaseModel>(
 
       try {
         /** Check if the filter value is valid. **/
-        model.castObject({ [field]: obj[key] });
+        if (operator != "in" && operator != "nin") {
+          model.castObject({ [field]: obj[key] });
+        } else {
+          model.castObject({ [field]: [obj[key]] });
+        }
       } catch (error) {
         /** If not valid, ignore the filter **/
         delete obj[key];
@@ -49,8 +53,8 @@ export default function castFilter<T extends ADPBaseModel>(
           break;
         case "in":
           obj[field].$in = Array.isArray(obj[key])
-            ? obj[key].map((item) => parsePossibleObjectId(item))
-            : [parsePossibleObjectId(obj[key])];
+            ? obj[key].map((item) => parsePossibleObjectId(model, field, item))
+            : [parsePossibleObjectId(model, field, obj[key])];
           break;
         case "lt":
           obj[field].$lt = obj[key];
@@ -63,8 +67,8 @@ export default function castFilter<T extends ADPBaseModel>(
           break;
         case "nin":
           obj[field].$in = Array.isArray(obj[key])
-            ? obj[key].map((item) => parsePossibleObjectId(item))
-            : [parsePossibleObjectId(obj[key])];
+            ? obj[key].map((item) => parsePossibleObjectId(model, field, item))
+            : [parsePossibleObjectId(model, field, obj[key])];
           break;
       }
       delete obj[key];
@@ -95,11 +99,22 @@ export default function castFilter<T extends ADPBaseModel>(
   return obj;
 }
 
-function parsePossibleObjectId(value) {
-  if (ObjectId.isValid(value)) {
-    let parsedId = new ObjectId(value);
-    if (parsedId.toString() === value) {
-      return parsedId;
+function parsePossibleObjectId(model, field, value) {
+  const fieldSchema = model.schema.path(field);
+  if (
+    fieldSchema != undefined &&
+    typeof value == "string" &&
+    ((fieldSchema.$isMongooseArray &&
+      fieldSchema.caster.instance != "String") ||
+      (!fieldSchema.$isMongooseArray && fieldSchema.instance != "String"))
+  ) {
+    if (ObjectId.isValid(value)) {
+      let parsedId = new ObjectId(value);
+      if (parsedId.toString() === value) {
+        return parsedId;
+      } else {
+        return value;
+      }
     } else {
       return value;
     }
