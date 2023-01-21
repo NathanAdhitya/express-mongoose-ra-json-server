@@ -18,7 +18,7 @@ export default function castFilter<T extends ADPBaseModel>(
     } catch (e) {}
 
     if (allowedRegexes.includes(key) && typeof obj[key] === "string") {
-      obj[key] = new RegExp(escapeStringRegexp(obj[key]));
+      obj[key] = new RegExp(escapeStringRegexp(obj[key]), "i");
     }
   });
 
