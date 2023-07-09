@@ -1,10 +1,3 @@
-// export default function virtualId<T extends { _id?: ID }, ID>(
-//   arr: T[]
-// ): Array<T & { id?: ID }>;
-// export default function virtualId<T extends { _id?: ID }, ID>(
-//   doc: T
-// ): T & { id?: ID };
-
 /** Virtual ID (_id to id) for react-admin */
 export default function virtualId<T extends { _id?: ID }, ID>(
   el: Array<T> | T

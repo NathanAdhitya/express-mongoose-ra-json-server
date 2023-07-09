@@ -1,22 +1,21 @@
 import { RequestHandler, Router } from "express";
-import { LeanDocument } from "mongoose";
-import statusMessages from "./statusMessages";
-import { ADPBaseModel, ADPBaseSchema } from "./utils/baseModel.interface";
-import castFilter from "./utils/castFilter";
-import convertId from "./utils/convertId";
-import filterGetList from "./utils/filterGetList";
-import { filterReadOnly } from "./utils/filterReadOnly";
-import parseQuery from "./utils/parseQuery";
-import virtualId from "./utils/virtualId";
+import statusMessages from "./statusMessages.js";
+import { ADPBaseModel, ADPBaseSchema } from "./utils/baseModel.interface.js";
+import castFilter from "./utils/castFilter.js";
+import convertId from "./utils/convertId.js";
+import filterGetList from "./utils/filterGetList.js";
+import { filterReadOnly } from "./utils/filterReadOnly.js";
+import parseQuery from "./utils/parseQuery.js";
+import virtualId from "./utils/virtualId.js";
 
 // Export certain helper functions for custom reuse.
-export { default as virtualId } from "./utils/virtualId";
-export { default as convertId } from "./utils/convertId";
-export { default as castFilter } from "./utils/castFilter";
-export { default as parseQuery } from "./utils/parseQuery";
-export { default as filterGetList } from "./utils/filterGetList";
-export { filterReadOnly } from "./utils/filterReadOnly";
-export { default as statusMessages } from "./statusMessages";
+export { default as virtualId } from "./utils/virtualId.js";
+export { default as convertId } from "./utils/convertId.js";
+export { default as castFilter } from "./utils/castFilter.js";
+export { default as parseQuery } from "./utils/parseQuery.js";
+export { default as filterGetList } from "./utils/filterGetList.js";
+export { filterReadOnly } from "./utils/filterReadOnly.js";
+export { default as statusMessages } from "./statusMessages.js";
 
 export interface raExpressMongooseCapabilities {
   list?: boolean;
@@ -57,6 +56,9 @@ export interface raExpressMongooseOptions<T> {
   /** Specify a custom express.js router */
   router?: Router;
 
+  /** Should all queries use lean? (default = true) */
+  useLean?: boolean;
+
   /** Specify an ACL middleware to check against permissions */
   ACLMiddleware?: (name: string) => RequestHandler;
 }
@@ -75,6 +77,7 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
     maxRows = 100,
     capabilities,
     aclName,
+    useLean,
     router = Router(),
     ACLMiddleware
   } = options ?? {};
@@ -163,9 +166,9 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
             })
           ).toString()
         );
-        return res.json(
-          virtualId((await query.lean()) as LeanDocument<ADPBaseSchema>)
-        );
+        if (useLean ?? true) return res.json(virtualId(await query.lean()));
+
+        return res.json(virtualId(await query));
       }
     );
 
@@ -177,10 +180,11 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
         ? ACLMiddleware(`${aclName}.list`)
         : (req, res, next) => next(),
       async (req, res) => {
-        await model
-          .findById(req.params.id)
-          .select(extraSelects)
-          .lean()
+        let baseQuery = model.findById(req.params.id).select(extraSelects);
+
+        if (useLean ?? true) baseQuery = baseQuery.lean();
+
+        await baseQuery
           .then((result) => res.json(virtualId(result)))
           .catch((e) => {
             return statusMessages.error(res, 400, e);
@@ -228,12 +232,18 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
           ))
         };
 
-        await model
-          .findOneAndUpdate({ _id: req.params.id }, updateData, {
+        let baseQuery = model.findOneAndUpdate(
+          { _id: req.params.id },
+          updateData,
+          {
             new: true,
             runValidators: true
-          })
-          .lean()
+          }
+        );
+
+        if (useLean ?? true) baseQuery.lean();
+
+        await baseQuery
           .then((result) => res.json(virtualId(result)))
           .catch((e) => {
             return statusMessages.error(res, 400, e, "Bad request");

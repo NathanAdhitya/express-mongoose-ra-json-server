@@ -1,5 +1,5 @@
-import { ADPBaseModel } from "./baseModel.interface";
-import castFilter from "./castFilter";
+import { ADPBaseModel } from "./baseModel.interface.js";
+import castFilter from "./castFilter.js";
 
 interface parseQueryParam {
   q?: string;
@@ -8,7 +8,9 @@ interface parseQueryParam {
 
 /**
  * Turns ?q into $or queries, deletes q
- * @param {Object} results Original object with the q field
+ * @param {T} result Original object with the q field and $or field
+ * @param {M} model Model to cast the query to
+ * @param {string[]} allowedRegexes Allowed regexes for the model
  * @param {string[]} fields Fields to apply q to
  */
 export default function parseQuery<

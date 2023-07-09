@@ -1,7 +1,6 @@
 import escapeStringRegexp from "escape-string-regexp";
 import mongoose from "mongoose";
-import { ADPBaseModel } from "./baseModel.interface";
-const { ObjectId } = mongoose.Types;
+import { ADPBaseModel } from "./baseModel.interface.js";
 
 /**
  * Turns all the params into their proper types, string into regexes.
@@ -27,11 +26,24 @@ export default function castFilter<T extends ADPBaseModel>(
 
       try {
         /** Check if the filter value is valid. **/
-        if (operator != "in" && operator != "nin") {
-          model.castObject({ [field]: obj[key] });
+        let casted = null;
+
+        // if operator is in and nin, and the value is an array, cast each element of the array
+        if (
+          (operator == "in" || operator == "nin") &&
+          Array.isArray(obj[key])
+        ) {
+          casted = {
+            [field]: obj[key].map(
+              (item: any) => model.castObject({ [field]: item })[field]
+            )
+          };
         } else {
-          model.castObject({ [field]: [obj[key]] });
+          casted = model.castObject({ [field]: obj[key] });
         }
+
+        // Replace the value with the casted value
+        obj[key] = casted[field];
       } catch (error) {
         /** If not valid, ignore the filter **/
         delete obj[key];
@@ -52,9 +64,7 @@ export default function castFilter<T extends ADPBaseModel>(
           obj[field].$gte = obj[key];
           break;
         case "in":
-          obj[field].$in = Array.isArray(obj[key])
-            ? obj[key].map((item) => parsePossibleObjectId(model, field, item))
-            : [parsePossibleObjectId(model, field, obj[key])];
+          obj[field].$in = Array.isArray(obj[key]) ? obj[key] : [obj[key]];
           break;
         case "lt":
           obj[field].$lt = obj[key];
@@ -66,9 +76,7 @@ export default function castFilter<T extends ADPBaseModel>(
           obj[field].$ne = obj[key];
           break;
         case "nin":
-          obj[field].$in = Array.isArray(obj[key])
-            ? obj[key].map((item) => parsePossibleObjectId(model, field, item))
-            : [parsePossibleObjectId(model, field, obj[key])];
+          obj[field].$in = Array.isArray(obj[key]) ? obj[key] : [obj[key]];
           break;
       }
       delete obj[key];
@@ -80,7 +88,8 @@ export default function castFilter<T extends ADPBaseModel>(
       obj[key].$in.forEach((item, index) => {
         try {
           /** Check if the filter value is valid. **/
-          model.castObject({ [key]: item });
+          const casted = model.castObject({ [key]: item })[key];
+          obj[key].$in[index] = casted;
         } catch (error) {
           /** If not valid, ignore the filter. **/
           delete obj[key].$in[index];
@@ -97,28 +106,4 @@ export default function castFilter<T extends ADPBaseModel>(
     }
   });
   return obj;
-}
-
-function parsePossibleObjectId(model, field, value) {
-  const fieldSchema = model.schema.path(field);
-  if (
-    fieldSchema != undefined &&
-    typeof value == "string" &&
-    ((fieldSchema.$isMongooseArray &&
-      fieldSchema.caster.instance != "String") ||
-      (!fieldSchema.$isMongooseArray && fieldSchema.instance != "String"))
-  ) {
-    if (ObjectId.isValid(value)) {
-      let parsedId = new ObjectId(value);
-      if (parsedId.toString() === value) {
-        return parsedId;
-      } else {
-        return value;
-      }
-    } else {
-      return value;
-    }
-  } else {
-    return value;
-  }
 }
