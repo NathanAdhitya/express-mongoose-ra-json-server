@@ -1,5 +1,4 @@
 import escapeStringRegexp from "escape-string-regexp";
-import mongoose from "mongoose";
 import { ADPBaseModel } from "./baseModel.interface.js";
 
 /**
@@ -10,7 +9,8 @@ import { ADPBaseModel } from "./baseModel.interface.js";
 export default function castFilter<T extends ADPBaseModel>(
   obj: Record<string, any>,
   model: T,
-  allowedRegexes: string[] = []
+  allowedRegexes: string[] = [],
+  regexFlags: string = "i"
 ) {
   Object.keys(obj).forEach((key) => {
     /**  Parse MongoDB Query Operators **/
@@ -81,7 +81,7 @@ export default function castFilter<T extends ADPBaseModel>(
       }
       delete obj[key];
     } else if (allowedRegexes.includes(key) && typeof obj[key] === "string") {
-      obj[key] = new RegExp(escapeStringRegexp(obj[key]));
+      obj[key] = new RegExp(escapeStringRegexp(obj[key]), regexFlags);
     } else if (Array.isArray(obj[key])) {
       /** Use $in operator for arrays (getMany)**/
       obj[key] = { $in: obj[key] };

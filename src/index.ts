@@ -35,6 +35,9 @@ export interface raExpressMongooseOptions<T> {
   /** Fields to allow regex based search (non-exact search) */
   allowedRegexFields?: string[];
 
+  /** Regex flags for regex-based search */
+  regexFlags?: string;
+
   /** Read-only fields to filter out during create and update */
   readOnlyFields?: string[];
 
@@ -66,7 +69,7 @@ export interface raExpressMongooseOptions<T> {
 export default function raExpressMongoose<T extends ADPBaseModel, I>(
   model: T,
   options?: raExpressMongooseOptions<I>
-) {
+): Router {
   const {
     q,
     allowedRegexFields = [],
@@ -75,6 +78,7 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
     listQuery,
     extraSelects,
     maxRows = 100,
+    regexFlags,
     capabilities,
     aclName,
     useLean,
@@ -104,11 +108,13 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
             castFilter(
               convertId(filterGetList(req.query)),
               model,
-              allowedRegexFields
+              allowedRegexFields,
+              regexFlags
             ),
             model,
             allowedRegexFields,
-            q
+            q,
+            regexFlags
           )
         });
 
@@ -157,11 +163,13 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
                 castFilter(
                   convertId(filterGetList(req.query)),
                   model,
-                  allowedRegexFields
+                  allowedRegexFields,
+                  regexFlags
                 ),
                 model,
                 allowedRegexFields,
-                q
+                q,
+                regexFlags
               )
             })
           ).toString()

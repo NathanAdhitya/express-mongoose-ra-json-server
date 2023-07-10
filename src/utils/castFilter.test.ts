@@ -225,4 +225,22 @@ describe("component: castFilter", () => {
       });
     });
   });
+
+  // Test Regex
+  describe("regex", () => {
+    test("regex defaults to case-insensitive", async () => {
+      const result = castFilter({ string: "a" }, testModel, ["string"]);
+      expect(result).toEqual({ string: /a/i });
+    });
+
+    test("may specify regex flags", async () => {
+      const result = castFilter({ string: "a" }, testModel, ["string"], "g");
+      expect(result).toEqual({ string: /a/g });
+    });
+
+    test("may empty regex flags", async () => {
+      const result = castFilter({ string: "a" }, testModel, ["string"], "");
+      expect(result).toEqual({ string: /a/ });
+    });
+  });
 });
