@@ -1,12 +1,15 @@
 # express-mongoose-ra-json-server
+
 [![npm](https://img.shields.io/npm/v/express-mongoose-ra-json-server)](https://www.npmjs.com/package/express-mongoose-ra-json-server)
 
-creates express.js routes from a mongoose model for ra-data-json-server  
+Create express.js routes from a mongoose model for ra-data-json-server. Very useful for rapid prototyping with MongoDB, Mongoose, and [react-admin](https://github.com/marmelab/react-admin).  
 Example/demo project is available here: [express-mongoose-ra-json-server-demo](https://github.com/NathanAdhitya/express-mongoose-ra-json-server-demo)
 
 ## Installation
 
-`npm add express-mongoose-ra-json-server` or if you use yarn, `yarn add express-mongoose-ra-json-server`
+NPM: `npm add express-mongoose-ra-json-server`  
+Yarn: `yarn add express-mongoose-ra-json-server`  
+PNPM: `pnpm add express-mongoose-ra-json-server`
 
 ### Client Usage
 
@@ -43,6 +46,9 @@ export interface raExpressMongooseOptions<T> {
   /** Fields to allow regex based search (non-exact search) */
   allowedRegexFields?: string[];
 
+  /** Regex flags for regex-based search */
+  regexFlags?: string;
+
   /** Read-only fields to filter out during create and update */
   readOnlyFields?: string[];
 
@@ -64,21 +70,27 @@ export interface raExpressMongooseOptions<T> {
   /** Specify a custom express.js router */
   router?: Router;
 
+  /** Should all queries use lean? (default = true) */
+  useLean?: boolean;
+
   /** Specify an ACL middleware to check against permissions */
   ACLMiddleware?: (name: string) => RequestHandler;
 }
 ```
+
 ## Query Operators
 
 MongoDB Query Operators can be used by appending them as a suffix to the field name ([see here](https://marmelab.com/react-admin/FilteringTutorial.html#filter-operators)).
+
 ### Supported Operators
-| MongoDB Query Operator | Field Suffix | Description                                                                                                                                                                     |
-|------------------------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| $eq                    | _eq          | Matches values that are equal to a specified value. <br/> (Useful for matching exact values if a field is included in allowedRegexFields) <br/> Example:  `/user?name_eq=Alex` |
-| $gt                    | _gt          | Matches values that are greater than a specified value. <br/> Example:  `/user?createdAt_gt=2022-10-25T00%3A00%3A00.000Z`                                                       |
-| $gte                   | _gte         | Matches values that are greater than or equal to a specified value. <br/> Example:  `/user?createdAt_gte=2022-10-25T00%3A00%3A00.000Z`                                          |
-| $in                    | _in          | Matches any of the values specified in an array. <br/> Example: `/user?name_in=Alex&name_in=Peter`                                                                              |
-| $lt                    | _lt          | Matches values that are less than a specified value. <br/> Example:  `/user?createdAt_lt=2022-10-25T00%3A00%3A00.000Z`                                                          |
-| $lte                   | _lte         | Matches values that are less than or equal to a specified value. <br/> Example:  `/user?createdAt_lte=2022-10-25T00%3A00%3A00.000Z`                                             |
-| $ne                    | _ne          | Matches all values that are not equal to a specified value. <br/> Example:  `/user?name_ne=Alex`                                                                                |
-| $nin                   | _nin         | Matches none of the values specified in an array. <br/> Example:  `/user?name_nin=Alex&name_nin=Peter`                                                                          |
+
+| MongoDB Query Operator | Field Suffix | Description                                                                                                                                                                   |
+| ---------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| $eq                    | \_eq         | Matches values that are equal to a specified value. <br/> (Useful for matching exact values if a field is included in allowedRegexFields) <br/> Example: `/user?name_eq=Alex` |
+| $gt                    | \_gt         | Matches values that are greater than a specified value. <br/> Example: `/user?createdAt_gt=2022-10-25T00%3A00%3A00.000Z`                                                      |
+| $gte                   | \_gte        | Matches values that are greater than or equal to a specified value. <br/> Example: `/user?createdAt_gte=2022-10-25T00%3A00%3A00.000Z`                                         |
+| $in                    | \_in         | Matches any of the values specified in an array. <br/> Example: `/user?name_in=Alex&name_in=Peter`                                                                            |
+| $lt                    | \_lt         | Matches values that are less than a specified value. <br/> Example: `/user?createdAt_lt=2022-10-25T00%3A00%3A00.000Z`                                                         |
+| $lte                   | \_lte        | Matches values that are less than or equal to a specified value. <br/> Example: `/user?createdAt_lte=2022-10-25T00%3A00%3A00.000Z`                                            |
+| $ne                    | \_ne         | Matches all values that are not equal to a specified value. <br/> Example: `/user?name_ne=Alex`                                                                               |
+| $nin                   | \_nin        | Matches none of the values specified in an array. <br/> Example: `/user?name_nin=Alex&name_nin=Peter`                                                                         |
