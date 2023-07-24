@@ -193,7 +193,9 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
         if (useLean ?? true) baseQuery = baseQuery.lean();
 
         await baseQuery
-          .then((result) => res.json(virtualId(useLean ? result : result._doc)))
+          .then((result) =>
+            res.json(virtualId(useLean ?? true ? result : result._doc))
+          )
           .catch((e) => {
             return statusMessages.error(res, 400, e);
           });
@@ -252,7 +254,9 @@ export default function raExpressMongoose<T extends ADPBaseModel, I>(
         if (useLean ?? true) baseQuery.lean();
 
         await baseQuery
-          .then((result) => res.json(virtualId(useLean ? result : result._doc)))
+          .then((result) =>
+            res.json(virtualId(useLean ?? true ? result : result._doc))
+          )
           .catch((e) => {
             return statusMessages.error(res, 400, e, "Bad request");
           });
